@@ -12,7 +12,6 @@ from rasterio.enums import Resampling
 from fastapi import FastAPI, Response
 from fastapi.responses import JSONResponse
 
-
 DATA_DIR = '/code/data'
 # populate_xlsx = r"C:\\Users\\srpp0\\PycharmProjects\\olm_fastapi\\LandGIS_tables.xlsx"
 populate_xlsx = r"LandGIS_tables.xlsx"
