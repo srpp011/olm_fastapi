@@ -3,6 +3,7 @@ import re
 import json
 import pandas as pd
 import glob
+import requests
 from typing import Union
 from osgeo import gdal
 import pyproj
@@ -132,6 +133,24 @@ async def point(lon: str, lat: str, coll: Union[str, None], regex: str, mosaic: 
     #             date_param = match.group(1)
     #             extracted_item[f"{date_param}"] = value
     return JSONResponse(pq, status_code=200)
+
+@app.get("/rss-feed")
+async def get_feed():
+    try:
+
+        url = "https://medium.com/feed/@opengeohub"
+
+        payload = {}
+
+        response = requests.request("GET", url, data=payload)
+
+        data = response.text
+        return Response(content=data, media_type="application/xml")
+
+    except:
+        return JSONResponse({'error': 'Error while reading data from file.'}, status_code=400)
+
+
 
 # lat=59.42693461518746
 # lon=13.421783447265616

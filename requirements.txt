@@ -28,3 +28,4 @@ websockets==12.0
 GDAL==3.4.1
 pyproj
 rasterio
+requests
