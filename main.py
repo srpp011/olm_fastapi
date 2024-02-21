@@ -68,7 +68,7 @@ def read_pixel_on_multiple_images(file_list, lon, lat, epsg):
 
 @app.get("/")
 def root_address():
-    return "Openland map is running on FAST API backend."
+    return "Openland map is running on FAST API backend. "
 
 @app.get("/populate")
 async def populate():
