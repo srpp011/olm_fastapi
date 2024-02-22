@@ -18,8 +18,8 @@ from fastapi import FastAPI, Response, HTTPException, Depends
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 from typing import Annotated
-import models
-from database import SessionLocal, engine
+from . import models
+from .database import SessionLocal, engine
 from sqlalchemy.orm import Session
 
 
