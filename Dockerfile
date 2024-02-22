@@ -7,6 +7,8 @@ WORKDIR /code
 
 COPY ./requirements.txt /code/requirements.txt
 COPY ./main.py /code/
+COPY ./database.py /code/
+COPY ./models.py /code/
 COPY ./LandGIS_tables.xlsx /code/
 
 RUN pip install -r /code/requirements.txt
