@@ -11,7 +11,7 @@ from typing import Union
 from fastapi.openapi import models
 from osgeo import gdal
 import pyproj
-from pyproj import Transformer, CRS,Geod
+from pyproj import Transformer, CRS
 import numpy as np
 from rasterio.enums import Resampling
 from fastapi import FastAPI, Response, HTTPException, Depends
