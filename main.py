@@ -1,22 +1,66 @@
 import os
 import re
 import json
+import datetime
+
 import pandas as pd
 import glob
 import requests
 from typing import Union
+
+from fastapi.openapi import models
 from osgeo import gdal
 import pyproj
 from pyproj import Transformer, CRS,Geod
 import numpy as np
 from rasterio.enums import Resampling
-from fastapi import FastAPI, Response
+from fastapi import FastAPI, Response, status, HTTPException, Depends
 from fastapi.responses import JSONResponse
+from pydantic import BaseModel
+from typing import Annotated
+import models
+from database import SessionLocal, engine
+from sqlalchemy.orm import Session
+
 
 DATA_DIR = '/code/data'
 # populate_xlsx = r"C:\\Users\\srpp0\\PycharmProjects\\olm_fastapi\\LandGIS_tables.xlsx"
 populate_xlsx = r"LandGIS_tables.xlsx"
+
+
 app = FastAPI()
+models.Base.metadata.create_all(bind=engine)
+
+class LayerBase(BaseModel):
+    request_url : str
+    request_date : datetime.datetime
+    name : str
+    bbox : str
+
+def get_db():
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
+
+db_dependency = Annotated[Session, Depends(get_db)]
+
+# @app.post("/stats/")
+# async def create_stats(layer: LayerBase, db: db_dependency):
+#     db_layers = models.Layer(request_url=layer.request_url, name=layer.name, bbox=layer.bbox, request_date=datetime.datetime.now())
+#     db.add(db_layers)
+#     db.commit()
+#     db.refresh(db_layers)
+
+@app.get("/stats/")
+async def get_stats(db: db_dependency):
+    result = db.query(models.Layer).all()
+    print(result)
+    if not result:
+        raise HTTPException(status_code=404, detail="Layer data not found")
+    return result
+
 @app.on_event("startup")
 async def read_xls():
     global layers_data
@@ -79,8 +123,8 @@ async def populate():
         return JSONResponse({'error': 'Error while reading data from file.'}, status_code=400)
 
 @app.get("/query/point")
-async def point(lon: str, lat: str, coll: Union[str, None], regex: str, mosaic: bool = False, oem: bool = False):
-    
+async def point(db: db_dependency, lon: str, lat: str, coll: Union[str, None], regex: str, mosaic: bool = False, oem: bool = False):
+
     files = []
 
     if coll == "log.oc_iso.10694_m_1km_.*_.*_.*_go_espg.4326_v20230608":
@@ -120,6 +164,17 @@ async def point(lon: str, lat: str, coll: Union[str, None], regex: str, mosaic: 
     except:
         epsg = 4326
     pq = read_pixel_on_multiple_images(files, lon, lat, epsg)
+
+    # stats:
+    try:
+        lyr = files[0]
+        point = f'POINT({lat} {lon})'
+        db_layers = models.Layer(name=lyr, location=point, request_date=datetime.datetime.now())
+        db.add(db_layers)
+        db.commit()
+        db.refresh(db_layers)
+    except:
+        pass
 
 
     # for data in pq:

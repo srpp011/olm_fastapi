@@ -29,3 +29,10 @@ GDAL==3.4.1
 pyproj
 rasterio
 requests
+sqlalchemy
+sqlmodel
+asyncpg
+psycopg2
+psycopg2-binary
+geoalchemy2
+geoalchemy2[shapely]
