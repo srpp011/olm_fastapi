@@ -167,7 +167,7 @@ async def point(db: db_dependency, lon: str, lat: str, coll: Union[str, None], r
 
     # stats:
     try:
-        lyr = files[0]
+        lyr = files[0].split('/')[-1]
         point = f'POINT({lat} {lon})'
         db_layers = models.Layer(name=lyr, location=point, request_date=datetime.datetime.now())
         db.add(db_layers)
