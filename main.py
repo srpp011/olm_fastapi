@@ -19,7 +19,7 @@ from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 from typing import Annotated
 from . import models
-from . database import SessionLocal, engine
+from .database import SessionLocal, engine
 from sqlalchemy.orm import Session
 
 
