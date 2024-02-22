@@ -14,7 +14,7 @@ import pyproj
 from pyproj import Transformer, CRS,Geod
 import numpy as np
 from rasterio.enums import Resampling
-from fastapi import FastAPI, Response, status, HTTPException, Depends
+from fastapi import FastAPI, Response, HTTPException, Depends
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 from typing import Annotated
