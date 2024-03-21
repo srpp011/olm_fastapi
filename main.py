@@ -21,10 +21,11 @@ from typing import Annotated
 import models
 from database import SessionLocal, engine
 from sqlalchemy.orm import Session
+from sqlalchemy import inspect
 
 
 DATA_DIR = '/code/data'
-# populate_xlsx = r"C:\\Users\\srpp0\\PycharmProjects\\olm_fastapi\\LandGIS_tables.xlsx"
+# populate_xlsx = r"C:\\Users\\srpp0\\Projects\\olm\\LandGIS_tables.xlsx"
 populate_xlsx = r"LandGIS_tables.xlsx"
 
 
@@ -52,14 +53,28 @@ db_dependency = Annotated[Session, Depends(get_db)]
 #     db.add(db_layers)
 #     db.commit()
 #     db.refresh(db_layers)
-
+def object_as_dict(obj):
+    return {c.key: getattr(obj, c.key)
+            for c in inspect(obj).mapper.column_attrs}
 @app.get("/stats/")
 async def get_stats(db: db_dependency):
     result = db.query(models.Layer).all()
-    print(result)
     if not result:
         raise HTTPException(status_code=404, detail="Layer data not found")
-    return result
+    results = [object_as_dict(r) for r in result]
+    print(results)
+    df = pd.DataFrame(results)
+    df2 = pd.DataFrame(results)
+    groupby_column = 'name'
+    df = df.groupby(groupby_column).count().sort_values(['id'], ascending=False).head(10)
+    layers_in_nums = df.to_dict().get('id')
+    lyrs_name = list(layers_in_nums.keys())
+    resp = []
+    print(lyrs_name)
+    for lyr_name in lyrs_name:
+        resp.append({'name': lyr_name, 'num':layers_in_nums.get(lyr_name), 'location':list(df2.loc[df2['name']== lyr_name,'location'])})
+    return resp
+    # return JSONResponse(res, status_code=200)
 
 @app.on_event("startup")
 async def read_xls():
@@ -140,7 +155,7 @@ async def point(db: db_dependency, lon: str, lat: str, coll: Union[str, None], r
         files = glob.glob(f'{root_dir}/{coll}/{regex}')
     if regex != '*.tif':
         root_dir = "/code/data/s3/olm/arco"
-        if coll is None:
+        if coll is None or coll == '':
             regex = regex.replace('.*', '*')
             files = glob.glob(f'{root_dir}/{regex}')
         else:
