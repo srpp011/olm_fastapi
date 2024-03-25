@@ -38,6 +38,13 @@ class LayerBase(BaseModel):
     name : str
     bbox : str
 
+class ViewPortBase(BaseModel):
+    layer : str
+    layerId : str
+    bbox : str
+    time : str
+
+
 def get_db():
     db = SessionLocal()
     try:
@@ -56,13 +63,46 @@ db_dependency = Annotated[Session, Depends(get_db)]
 def object_as_dict(obj):
     return {c.key: getattr(obj, c.key)
             for c in inspect(obj).mapper.column_attrs}
+
+@app.get("/viewport-stats/")
+async def get_stats(db: db_dependency):
+    result = db.query(models.Viewport).all()
+    if not result:
+        raise HTTPException(status_code=404, detail="No data")
+    results = [object_as_dict(r) for r in result]
+    df = pd.DataFrame(results)
+    df2 = pd.DataFrame(results)
+    groupby_column = 'layerId'
+    df = df.groupby(groupby_column).count().sort_values(['id'], ascending=False).head(10)
+    layers_in_nums = df.to_dict().get('id')
+    lyrs_name = list(layers_in_nums.keys())
+    resp = []
+    for lyr_name in lyrs_name:
+        resp.append({
+            'layer': list(df2.loc[df2['layerId'] == lyr_name, 'layer'].drop_duplicates())[0],
+            'layerId': lyr_name,
+            'time': list(df2.loc[df2['layerId'] == lyr_name, 'time'].drop_duplicates()),
+            'bbox': list(df2.loc[df2['layerId'] == lyr_name, 'bbox'].drop_duplicates())
+        })
+    return resp
+
+@app.post("/viewport-stats/")
+async def post_stats( viewport: ViewPortBase, db: Session = Depends(get_db) ):
+    try:
+        db_item = models.Viewport(**viewport.dict())
+        db.add(db_item)
+        db.commit()
+        db.refresh(db_item)
+    except:
+      return JSONResponse({"status": "failed", "message": "Record not saved."})
+    return JSONResponse({"status": "success", "message": "Record added in db."})
+
 @app.get("/stats/")
 async def get_stats(db: db_dependency):
     result = db.query(models.Layer).all()
     if not result:
         raise HTTPException(status_code=404, detail="Layer data not found")
     results = [object_as_dict(r) for r in result]
-    print(results)
     df = pd.DataFrame(results)
     df2 = pd.DataFrame(results)
     groupby_column = 'name'
@@ -70,7 +110,6 @@ async def get_stats(db: db_dependency):
     layers_in_nums = df.to_dict().get('id')
     lyrs_name = list(layers_in_nums.keys())
     resp = []
-    print(lyrs_name)
     for lyr_name in lyrs_name:
         resp.append({'name': lyr_name, 'num':layers_in_nums.get(lyr_name), 'location':list(df2.loc[df2['name']== lyr_name,'location'])})
     return resp
